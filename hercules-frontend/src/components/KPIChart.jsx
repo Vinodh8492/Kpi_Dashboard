@@ -45,6 +45,11 @@ const Dashboard = () => {
   const [selectedStartDate, setSelectedStartDate] = useState(null);
   const [selectedEndDate, setSelectedEndDate] = useState(null);
 
+  const [batchNames, setBatchNames] = useState([]);
+  const [selectedBatch, setSelectedBatch] = useState("");
+  const [selectedBatchName, setSelectedBatchName] = useState(""); // Initialize it properly
+
+
   const handleStartDateChange = (newDate) => {
     if (newDate) {
       const updatedStartDate = new Date(newDate);
@@ -96,7 +101,8 @@ const Dashboard = () => {
                 "Product Name": item["Product Name"] || "Unknown",
                 "Order Status": item["Order Status"] || "Pending",
                 "SetPoint": item["SetPoint"] || 0,
-                "Tolerance": item["Tolerance"] || 0
+                "Tolerance": item["Tolerance"] || 0,
+                "Batch Name": item["Batch Name"] || "Unknown"
             }));
 
             console.log("✅ Sanitized Data:", data);
@@ -110,6 +116,12 @@ const Dashboard = () => {
                     return batchStartDate >= selectedStartDate && batchEndDate <= selectedEndDate;
                 });
             }
+
+            if (selectedBatchName) {
+              data = data.filter(item => item["Batch Name"] === selectedBatchName);
+          }
+
+          console.log("✅ Final Filtered Data:", data);
 
             const totalBatches = data.length;
             const uniqueProductsSet = new Set();
@@ -166,6 +178,10 @@ const Dashboard = () => {
                     }
                 }
             });
+
+            const uniqueBatchNames = Array.from(new Set(data.map(item => item["Batch Name"]).filter(name => name)));
+
+            setBatchNames(uniqueBatchNames);
 
             const uniqueProducts = uniqueProductsSet.size || 1;
             const batchesPerProduct = (totalBatches / uniqueProducts).toFixed(2);
@@ -350,7 +366,7 @@ console.log("✅ Bar Data for Lot Tracking Updated:", lotTrackingFormatted);
     
 
     fetchData();
-}, [selectedStartDate, selectedEndDate]); 
+}, [selectedStartDate, selectedEndDate, selectedBatchName]); 
 
   
 
@@ -417,6 +433,26 @@ console.log("✅ Bar Data for Lot Tracking Updated:", lotTrackingFormatted);
     inputFormat="MM/dd/yyyy"
   />
 </LocalizationProvider>;
+
+<label>Select Batch: </label>
+<select style={{
+    width: "200px",
+    height : "100px",
+    padding: "8px",
+    fontSize: "16px",
+    border: "2px solid #007bff",
+    borderRadius: "5px",
+    backgroundColor: "#f8f9fa",
+    color: "#333",
+    cursor: "pointer",
+    outline: "none",
+  }} onChange={(e) => setSelectedBatchName(e.target.value)}>
+    <option value="">All Batches</option>
+    {batchNames.map(batch => (
+        <option key={batch} value={batch}>{batch}</option>
+    ))}
+</select>
+
 
   
         <Grid container spacing={2} padding={2}>

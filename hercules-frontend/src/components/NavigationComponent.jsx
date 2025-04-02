@@ -26,7 +26,6 @@ const NavigationComponent = () => {
         <Link to="/" style={{ margin: '10px 0', fontSize:'25px', textDecoration: 'none', color: '#000' }}>Home</Link>
         <Link to="/batches" style={{ margin: '10px 0', fontSize:'25px', textDecoration: 'none', color: '#000' }}>Batches</Link>
         <Link to="/services" style={{ margin: '10px 0', fontSize:'25px', textDecoration: 'none', color: '#000' }}>Services</Link>
-        <Link to="/contact" style={{ margin: '10px 0', fontSize:'25px', textDecoration: 'none', color: '#000' }}>Contact</Link>
       </div>
     </div>
   );
