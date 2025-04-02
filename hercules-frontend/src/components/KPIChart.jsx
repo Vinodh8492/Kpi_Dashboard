@@ -41,6 +41,22 @@ const Dashboard = () => {
 
   const [selectedStartDate, setSelectedStartDate] = useState(null);
   const [selectedEndDate, setSelectedEndDate] = useState(null);
+
+  const handleStartDateChange = (newDate) => {
+    if (newDate) {
+      const updatedStartDate = new Date(newDate);
+      updatedStartDate.setHours(7, 0, 0, 0); // Set time to 7 AM
+      setSelectedStartDate(updatedStartDate);
+    }
+  };
+  
+  const handleEndDateChange = (newDate) => {
+    if (newDate) {
+      const updatedEndDate = new Date(newDate);
+      updatedEndDate.setHours(7, 0, 0, 0); // Set time to 7 AM
+      setSelectedEndDate(updatedEndDate);
+    }
+  };
   
   useEffect(() => {
     const fetchData = async () => {
@@ -190,7 +206,7 @@ const Dashboard = () => {
   <DatePicker
     label="Select Start Date"
     value={selectedStartDate}
-    onChange={(newDate) => setSelectedStartDate(newDate)}
+    onChange={handleStartDateChange}
     renderInput={(params) => (
       <TextField
         {...params}
@@ -198,7 +214,7 @@ const Dashboard = () => {
         sx={{
           position: "absolute",
           marginTop: "20px",
-          right: "270px", // Shift left to make space for the end date picker
+          right: "270px",
           backgroundColor: "#f5f5f5",
           borderRadius: "5px",
           width: "200px",
@@ -213,7 +229,7 @@ const Dashboard = () => {
   <DatePicker
     label="Select End Date"
     value={selectedEndDate}
-    onChange={(newDate) => setSelectedEndDate(newDate)}
+    onChange={handleEndDateChange}
     renderInput={(params) => (
       <TextField
         {...params}
@@ -221,7 +237,7 @@ const Dashboard = () => {
         sx={{
           position: "absolute",
           marginTop: "20px",
-          right: "50px", // Position it next to the Start Date picker
+          right: "50px",
           backgroundColor: "#f5f5f5",
           borderRadius: "5px",
           width: "200px",
@@ -231,7 +247,7 @@ const Dashboard = () => {
     )}
     inputFormat="MM/dd/yyyy"
   />
-</LocalizationProvider>
+</LocalizationProvider>;
 
   
         <Grid container spacing={2} padding={2}>
