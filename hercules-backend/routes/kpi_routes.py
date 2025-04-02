@@ -28,7 +28,7 @@ def add_kpi():
 CSV_FILE_PATH = "/Users/vinodhkumar/Downloads/100_Kpis_BatchMaterials.csv"  # Change this to the actual path
 
 # 🟢 **Route to Get All KPI Data**
-@kpi_bp.route("/api/kpi", methods=["GET"])
+@kpi_bp.route("/kpi", methods=["GET"])
 def get_kpis():
     try:
         if not os.path.exists(CSV_FILE_PATH):

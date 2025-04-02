@@ -39,6 +39,9 @@ const Dashboard = () => {
 
   const navigate = useNavigate();
 
+  const [selectedStartDate, setSelectedStartDate] = useState(null);
+  const [selectedEndDate, setSelectedEndDate] = useState(null);
+  
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -47,17 +50,15 @@ const Dashboard = () => {
   
         console.log("✅ Data Type:", typeof data);
   
-        // **Check if response is a string and try parsing**
         if (typeof data === "string") {
           try {
-            data = JSON.parse(data.replace(/NaN/g, "null")); // Replace `NaN` with `null` before parsing
+            data = JSON.parse(data.replace(/NaN/g, "null")); 
           } catch (parseError) {
             console.error("❌ Error parsing JSON:", parseError.message);
             return;
           }
         }
   
-        // **Ensure data is an array**
         if (!Array.isArray(data)) {
           console.error("❌ Error: Expected an array but received:", data);
           return;
@@ -65,26 +66,30 @@ const Dashboard = () => {
   
         console.log("✅ Data is an array with", data.length, "items.");
   
-        // **Sanitize Data: Handle null, undefined, and NaN values**
         data = data.map(item => ({
           ...item,
           "Batch Transfer Time": item["Batch Transfer Time"] ? Number(item["Batch Transfer Time"]) || 0 : 0, 
           "Batch Act Start": item["Batch Act Start"] || "N/A",
+          "Batch Act End": item["Batch Act End"] || "N/A",
           "Product Name": item["Product Name"] || "Unknown",
         }));
   
         console.log("✅ Sanitized Data:", data);
   
-        // **Filter data based on selected date**
-        if (selectedDate) {
+        // **Filter data based on start and end date**
+        if (selectedStartDate && selectedEndDate) {
           const filteredData = data.filter(item => {
-            const batchDate = new Date(item["Batch Act Start"]);
-            return batchDate.toDateString() === selectedDate.toDateString();
+            const batchStartDate = new Date(item["Batch Act Start"]);
+            const batchEndDate = new Date(item["Batch Act End"]);
+  
+            return (
+              batchStartDate >= selectedStartDate &&
+              batchEndDate <= selectedEndDate
+            );
           });
           data = filteredData;
         }
   
-        // **Processing KPI Metrics**
         const totalBatches = data.length;
         const uniqueProductsSet = new Set();
         const productCounts = {};
@@ -113,7 +118,6 @@ const Dashboard = () => {
   
         console.log("✅ Processed Metrics:", { totalBatches, uniqueProducts, batchesPerProduct, latestBatchDate });
   
-        // **Set State for Charts**
         setPieData({
           labels: Object.keys(productCounts),
           datasets: [
@@ -125,11 +129,11 @@ const Dashboard = () => {
         });
   
         setBarData({
-          labels: Object.keys(productCounts), // Get the batch names or keys
+          labels: Object.keys(productCounts), 
           datasets: [
             {
               label: "Batches Over Product Name",
-              data: Object.values(productCounts), // Get the counts of products
+              data: Object.values(productCounts), 
               backgroundColor: ["#3f51b5", "#ffb300", "#4caf50", "#0097a7"]
             }
           ]
@@ -161,7 +165,8 @@ const Dashboard = () => {
     };
   
     fetchData();
-  }, [selectedDate]); // Re-fetch when selectedDate changes
+  }, [selectedStartDate, selectedEndDate]); // Re-fetch when selectedStartDate or selectedEndDate changes
+   // Re-fetch when selectedDate changes
   
 
   
@@ -177,23 +182,61 @@ const Dashboard = () => {
       {/* Main Dashboard Content */}
     
       <Box component="main" sx={{ flexGrow: 1, p: 3 , display: "flex", justifyContent: "center" }}>
-      <LocalizationProvider dateAdapter={AdapterDateFns}>
-    <DatePicker
-      label="Select Date"
-      value={selectedDate}
-      onChange={(newDate) => setSelectedDate(newDate)}
-      renderInput={(params) => <TextField {...params} fullWidth style={{
-        backgroundColor: '#f5f5f5',  // Simple background color
-        borderRadius: '5px',          // Rounded corners           // Padding inside the input
-        marginBottom: '16px',
-        marginLeft : '15px'     // Space below the DatePicker
-      }} />}
-      inputFormat="MM/dd/yyyy"
-    />
-  </LocalizationProvider>
      
         <Toolbar /> {/* Space for top margin */}
+
+        <LocalizationProvider dateAdapter={AdapterDateFns}>
+  {/* Start Date Picker */}
+  <DatePicker
+    label="Select Start Date"
+    value={selectedStartDate}
+    onChange={(newDate) => setSelectedStartDate(newDate)}
+    renderInput={(params) => (
+      <TextField
+        {...params}
+        fullWidth
+        sx={{
+          position: "absolute",
+          marginTop: "20px",
+          right: "270px", // Shift left to make space for the end date picker
+          backgroundColor: "#f5f5f5",
+          borderRadius: "5px",
+          width: "200px",
+          zIndex: 10,
+        }}
+      />
+    )}
+    inputFormat="MM/dd/yyyy"
+  />
+
+  {/* End Date Picker */}
+  <DatePicker
+    label="Select End Date"
+    value={selectedEndDate}
+    onChange={(newDate) => setSelectedEndDate(newDate)}
+    renderInput={(params) => (
+      <TextField
+        {...params}
+        fullWidth
+        sx={{
+          position: "absolute",
+          marginTop: "20px",
+          right: "50px", // Position it next to the Start Date picker
+          backgroundColor: "#f5f5f5",
+          borderRadius: "5px",
+          width: "200px",
+          zIndex: 10,
+        }}
+      />
+    )}
+    inputFormat="MM/dd/yyyy"
+  />
+</LocalizationProvider>
+
+  
         <Grid container spacing={2} padding={2}>
+
+          
   {/* KPI Cards */}
   {kpiData.map((item, index) => (
     <Grid item xs={12} sm={6} md={3} key={index}>

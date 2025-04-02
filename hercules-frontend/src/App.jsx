@@ -16,6 +16,7 @@ const App = () => {
           <Typography variant="h4" align="center" gutterBottom>
              KPI Dashboard
           </Typography>
+          
           <Paper elevation={3} sx={{ padding: 2 }}>
             <Routes>
               <Route path="/" element={<KPIChart />} />
