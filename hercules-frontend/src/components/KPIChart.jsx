@@ -58,6 +58,10 @@ const Dashboard = () => {
   const [selectedBatch, setSelectedBatch] = useState("");
   const [selectedBatchName, setSelectedBatchName] = useState(""); // Initialize it properly
 
+  const [selectedProduct, setSelectedProduct] = useState("");  // New state
+  const [productNames, setProductNames] = useState([]); // Add this line
+
+
 
   const handleStartDateChange = (newDate) => {
     if (newDate) {
@@ -132,6 +136,10 @@ const Dashboard = () => {
               data = data.filter(item => item["Batch Name"] === selectedBatchName);
           }
 
+          if (selectedProduct) {
+            data = data.filter(item => item["Product Name"] === selectedProduct);
+        }
+
           console.log("✅ Final Filtered Data:", data);
 
           const formattedData = data.map(item => ({
@@ -202,6 +210,10 @@ const Dashboard = () => {
             const uniqueBatchNames = Array.from(new Set(data.map(item => item["Batch Name"]).filter(name => name)));
 
             setBatchNames(uniqueBatchNames);
+
+            const uniqueProductNames = Array.from(new Set(data.map(item => item["Product Name"]).filter(name => name)));
+setProductNames(uniqueProductNames); // Save it for dropdown
+
 
             const uniqueProducts = uniqueProductsSet.size || 1;
             const batchesPerProduct = (totalBatches / uniqueProducts).toFixed(2);
@@ -386,7 +398,7 @@ console.log("✅ Bar Data for Lot Tracking Updated:", lotTrackingFormatted);
     
 
     fetchData();
-}, [selectedStartDate, selectedEndDate, selectedBatchName]); 
+}, [selectedStartDate, selectedEndDate, selectedBatchName, selectedProduct]); 
 
   
 
@@ -417,7 +429,8 @@ if (pieData && pieData.labels && pieData.datasets && pieData.datasets[0].data) {
 
 const [showTable, setShowTable] = useState(false);
 
-
+console.log("selected product, ", selectedProduct)
+console.log("product name :", productNames)
 
 
   return (
@@ -427,6 +440,7 @@ const [showTable, setShowTable] = useState(false);
         <Button 
           variant={showTable ? "outlined" : "contained"} 
           onClick={() => setShowTable(false)}
+          sx={{ height: '50px' }}
         >
           Show Graphs
         </Button>
@@ -434,6 +448,7 @@ const [showTable, setShowTable] = useState(false);
         <Button 
           variant={showTable ? "contained" : "outlined"} 
           onClick={() => setShowTable(true)}
+          sx={{ height: '50px' }}
         >
           Show Table
         </Button>
@@ -487,6 +502,24 @@ const [showTable, setShowTable] = useState(false);
              ))}
            </Select>
          </FormControl>
+
+         {/* Product Name Dropdown */}
+<FormControl sx={{ width: "200px" }}>
+  <InputLabel>Select Product</InputLabel>
+  <Select
+    value={selectedProduct}
+    onChange={(e) => setSelectedProduct(e.target.value)}
+    sx={{ backgroundColor: "#f8f9fa", borderRadius: "5px" }}
+  >
+    <MenuItem value="">All Products</MenuItem>
+    {productNames.map((product) => (
+      <MenuItem key={product} value={product}>
+        {product}
+      </MenuItem>
+    ))}
+  </Select>
+</FormControl>
+
 
        </Box>
 
@@ -591,6 +624,33 @@ onChange={(e) => setSelectedBatchName(e.target.value)}
   </option>
 ))}
 </select>
+
+<label>Select Product: </label>
+<select
+  style={{
+    width: "200px",
+    height: "100px",
+    padding: "8px",
+    fontSize: "16px",
+    border: "2px solid #007bff",
+    borderRadius: "5px",
+    backgroundColor: "#f8f9fa",
+    color: "#333",
+    cursor: "pointer",
+    outline: "none",
+  }}
+  value={selectedProduct}  // Ensuring selected value is tracked
+  onChange={(e) => setSelectedProduct(e.target.value)}
+>
+  <option value="">All Products</option>
+  {productNames.map((product) => (
+    <option key={product} value={product}>
+      {product}
+    </option>
+  ))}
+</select>
+
+
 
 
 
