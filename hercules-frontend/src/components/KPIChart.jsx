@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { Grid, Card, CardContent, Typography, Box, Toolbar, Drawer, List, ListItemButton, ListItemIcon, ListItemText } from "@mui/material";
 import { Pie, Line, Bar } from "react-chartjs-2";
+
+
 import axios from "axios";
 import { 
   Chart as ChartJS, 
@@ -370,8 +372,30 @@ console.log("✅ Bar Data for Lot Tracking Updated:", lotTrackingFormatted);
 
   
 
-  
+const getRandomColors = (numColors) => {
+  return Array.from({ length: numColors }, () => `#${Math.floor(Math.random() * 16777215).toString(16)}`);
+};
 
+// Apply unique colors to bars
+if (barData && barData.labels && barData.datasets && barData.datasets[0].data) {
+  barData.datasets[0].backgroundColor = getRandomColors(barData.datasets[0].data.length);
+}
+
+if (barDataProduction && barDataProduction.labels && barDataProduction.datasets && barDataProduction.datasets[0].data) {
+  barDataProduction.datasets[0].backgroundColor = getRandomColors(barDataProduction.datasets[0].data.length);
+}
+
+if (barDataTolerance && barDataTolerance.labels && barDataTolerance.datasets && barDataTolerance.datasets[0].data) {
+  barDataTolerance.datasets[0].backgroundColor = getRandomColors(barDataTolerance.datasets[0].data.length);
+}
+
+if (barDataLotTracking && barDataLotTracking.labels && barDataLotTracking.datasets && barDataLotTracking.datasets[0].data) {
+  barDataLotTracking.datasets[0].backgroundColor = getRandomColors(barDataLotTracking.datasets[0].data.length);
+}
+
+if (pieData && pieData.labels && pieData.datasets && pieData.datasets[0].data) {
+  pieData.datasets[0].backgroundColor = getRandomColors(pieData.datasets[0].data.length);
+}
 
 
   return (
@@ -435,9 +459,10 @@ console.log("✅ Bar Data for Lot Tracking Updated:", lotTrackingFormatted);
 </LocalizationProvider>;
 
 <label>Select Batch: </label>
-<select style={{
+<select
+  style={{
     width: "200px",
-    height : "100px",
+    height: "100px",
     padding: "8px",
     fontSize: "16px",
     border: "2px solid #007bff",
@@ -446,12 +471,18 @@ console.log("✅ Bar Data for Lot Tracking Updated:", lotTrackingFormatted);
     color: "#333",
     cursor: "pointer",
     outline: "none",
-  }} onChange={(e) => setSelectedBatchName(e.target.value)}>
-    <option value="">All Batches</option>
-    {batchNames.map(batch => (
-        <option key={batch} value={batch}>{batch}</option>
-    ))}
+  }}
+  value={selectedBatchName}  // Ensure state is tracked correctly
+  onChange={(e) => setSelectedBatchName(e.target.value)}
+>
+  <option value="">All Batches</option>
+  {batchNames.map((batch) => (
+    <option key={batch} value={batch}>
+      {batch}
+    </option>
+  ))}
 </select>
+
 
 
   
