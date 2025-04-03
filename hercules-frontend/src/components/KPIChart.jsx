@@ -1,6 +1,13 @@
 import React, { useEffect, useState } from "react";
-import { Grid, Card, CardContent, Typography, Box, Toolbar, Drawer, List, ListItemButton, ListItemIcon, ListItemText } from "@mui/material";
+import { Grid, FormControl,InputLabel, MenuItem,Select, Card, CardContent, Typography, Box, Toolbar, Drawer, List, ListItemButton, ListItemIcon, ListItemText, Button } from "@mui/material";
 import { Pie, Line, Bar } from "react-chartjs-2";
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
+import Paper from '@mui/material/Paper';
 
 
 import axios from "axios";
@@ -67,6 +74,8 @@ const Dashboard = () => {
       setSelectedEndDate(updatedEndDate);
     }
   };
+
+  const [batchData, setBatchData] = useState([]);
   
   useEffect(() => {
     const fetchData = async () => {
@@ -124,6 +133,15 @@ const Dashboard = () => {
           }
 
           console.log("✅ Final Filtered Data:", data);
+
+          const formattedData = data.map(item => ({
+            batchName: item["Batch Name"] || "Unknown",
+            batchStart: item["Batch Act Start"] || "N/A",
+            batchEnd: item["Batch Act End"] || "N/A",
+            productName: item["Product Name"] || "Unknown",
+        }));
+
+        setBatchData(formattedData);
 
             const totalBatches = data.length;
             const uniqueProductsSet = new Set();
@@ -397,302 +415,401 @@ if (pieData && pieData.labels && pieData.datasets && pieData.datasets[0].data) {
   pieData.datasets[0].backgroundColor = getRandomColors(pieData.datasets[0].data.length);
 }
 
+const [showTable, setShowTable] = useState(false);
+
+
+
 
   return (
     <Box sx={{ display: "flex", justifyContent:"center" }}>
-      {/* Sidebar */}
+
+<Box sx={{ display: "flex", gap: 2, mb: 2 }}>
+        <Button 
+          variant={showTable ? "outlined" : "contained"} 
+          onClick={() => setShowTable(false)}
+        >
+          Show Graphs
+        </Button>
+
+        <Button 
+          variant={showTable ? "contained" : "outlined"} 
+          onClick={() => setShowTable(true)}
+        >
+          Show Table
+        </Button>
+      </Box>
+    
+      {showTable ? (
+       <TableContainer component={Paper} sx={{ maxWidth: "90%", margin: "auto", mt: 4 }}>
+
+       {/* Add Filters (Start Date, End Date, and Batch Dropdown) */}
+       <Box sx={{ display: "flex", justifyContent: "space-between", p: 2 }}>
+         
+         {/* Start Date Picker */}
+         <LocalizationProvider dateAdapter={AdapterDateFns}>
+           <DatePicker
+             label="Select Start Date"
+             value={selectedStartDate}
+             onChange={handleStartDateChange}
+             renderInput={(params) => (
+               <TextField {...params} sx={{ width: "200px", backgroundColor: "#f5f5f5", borderRadius: "5px" }} />
+             )}
+             inputFormat="MM/dd/yyyy"
+           />
+         </LocalizationProvider>
+
+         {/* End Date Picker */}
+         <LocalizationProvider dateAdapter={AdapterDateFns}>
+           <DatePicker
+             label="Select End Date"
+             value={selectedEndDate}
+             onChange={handleEndDateChange}
+             renderInput={(params) => (
+               <TextField {...params} sx={{ width: "200px", backgroundColor: "#f5f5f5", borderRadius: "5px" }} />
+             )}
+             inputFormat="MM/dd/yyyy"
+           />
+         </LocalizationProvider>
+
+         {/* Batch Dropdown */}
+         <FormControl sx={{ width: "200px" }}>
+           <InputLabel>Select Batch</InputLabel>
+           <Select
+             value={selectedBatchName}
+             onChange={(e) => setSelectedBatchName(e.target.value)}
+             sx={{ backgroundColor: "#f8f9fa", borderRadius: "5px" }}
+           >
+             <MenuItem value="">All Batches</MenuItem>
+             {batchNames.map((batch) => (
+               <MenuItem key={batch} value={batch}>
+                 {batch}
+               </MenuItem>
+             ))}
+           </Select>
+         </FormControl>
+
+       </Box>
+
+       {/* Table Data */}
+       <Table>
+    <TableHead>
+        <TableRow>
+            <TableCell><b>ID</b></TableCell> {/* New Serial Number Column */}
+            <TableCell><b>Batch Name</b></TableCell>
+            <TableCell><b>Batch Start Date</b></TableCell>
+            <TableCell><b>Batch End Date</b></TableCell>
+            <TableCell><b>Product Name</b></TableCell>
+        </TableRow>
+    </TableHead>
+    <TableBody>
+        {batchData.map((item, index) => (
+            <TableRow key={index}>
+                <TableCell>{index + 1}</TableCell> {/* Serial Number */}
+                <TableCell>{item.batchName}</TableCell>
+                <TableCell>{item.batchStart}</TableCell>
+                <TableCell>{item.batchEnd}</TableCell>
+                <TableCell>{item.productName}</TableCell>
+            </TableRow>
+        ))}
+    </TableBody>
+</Table>
+
+   </TableContainer>
+      ) : ( <Box component="main" sx={{ flexGrow: 1, p: 3 , display: "flex", justifyContent: "center" }}>
+     
+      <Toolbar /> {/* Space for top margin */}
+
+      <LocalizationProvider dateAdapter={AdapterDateFns}>
+{/* Start Date Picker */}
+<DatePicker
+  label="Select Start Date"
+  value={selectedStartDate}
+  onChange={handleStartDateChange}
+  renderInput={(params) => (
+    <TextField
+      {...params}
+      fullWidth
+      sx={{
+        position: "absolute",
+        marginTop: "20px",
+        right: "270px",
+        backgroundColor: "#f5f5f5",
+        borderRadius: "5px",
+        width: "200px",
+        zIndex: 10,
+      }}
+    />
+  )}
+  inputFormat="MM/dd/yyyy"
+/>
+
+{/* End Date Picker */}
+<DatePicker
+  label="Select End Date"
+  value={selectedEndDate}
+  onChange={handleEndDateChange}
+  renderInput={(params) => (
+    <TextField
+      {...params}
+      fullWidth
+      sx={{
+        position: "absolute",
+        marginTop: "20px",
+        right: "50px",
+        backgroundColor: "#f5f5f5",
+        borderRadius: "5px",
+        width: "200px",
+        zIndex: 10,
+      }}
+    />
+  )}
+  inputFormat="MM/dd/yyyy"
+/>
+</LocalizationProvider>;
+
+<label>Select Batch: </label>
+<select
+style={{
+  width: "200px",
+  height: "100px",
+  padding: "8px",
+  fontSize: "16px",
+  border: "2px solid #007bff",
+  borderRadius: "5px",
+  backgroundColor: "#f8f9fa",
+  color: "#333",
+  cursor: "pointer",
+  outline: "none",
+}}
+value={selectedBatchName}  // Ensure state is tracked correctly
+onChange={(e) => setSelectedBatchName(e.target.value)}
+>
+<option value="">All Batches</option>
+{batchNames.map((batch) => (
+  <option key={batch} value={batch}>
+    {batch}
+  </option>
+))}
+</select>
+
+
+
+
+      <Grid container spacing={2} padding={2}>
+
+        
+{/* KPI Cards */}
+{kpiData.map((item, index) => (
+  <Grid item xs={12} sm={6} md={3} key={index}>
+    <Card sx={{ backgroundColor: item.color, color: "white", textAlign: "center", height: "150px" }}>
+      <CardContent>
+        <Typography variant="h5">{item.value}</Typography>
+        <Typography variant="subtitle1">{item.title}</Typography>
+      </CardContent>
+    </Card>
+  </Grid>
+))}
+
+
+{/* Bar Chart - Products by Batch Name */}
+<Grid item xs={12} md={6}>
+<Card>
+  <CardContent>
+    <Typography variant="h6">Product Distribution</Typography>
+    {/* Only render the Bar chart with axes and Pie chart inside */}
+    {barData && barData.labels && barData.datasets && barData.datasets[0].data && barData.labels.length > 0 ? (
+      <div style={{ position: 'relative', width: '100%', height: '500px' }}> {/* Increase height here */}
+        {/* Bar chart axes */}
+        <Bar
+          data={barData}
+          options={{
+            responsive: true,
+            plugins: {
+              tooltip: {
+                enabled: false, // Hide default tooltips if needed
+              },
+            },
+            scales: {
+              x: {
+                beginAtZero: true,
+                ticks: {
+                  display: true, // Ensures that the x-axis labels are displayed
+                },
+                grid: {
+                  display: true, // Ensure x-axis grid is visible
+                  color: 'rgba(0, 0, 0, 0.1)', // Customize grid color
+                },
+              },
+              y: {
+                beginAtZero: true,
+                ticks: {
+                  display: true, // Ensures that the y-axis labels are displayed
+                },
+                grid: {
+                  display: true, // Ensure y-axis grid is visible
+                  color: 'rgba(0, 0, 0, 0.1)', // Customize grid color
+                },
+              },
+            },
+          }}
+          height={500} // Increase height here
+        />
+        {/* Pie Chart overlay inside Bar Chart container */}
+        {pieData && pieData.labels && pieData.datasets && pieData.datasets[0].data && pieData.labels.length > 0 && (
+          <div
+            style={{
+              position: 'absolute',
+              width: '70%',  // Adjust width to your needs
+              height: '70%', // Adjust height to your needs
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}
+          >
+            <Pie data={pieData} options={{ responsive: true }} width={100} height={100} />
+          </div>
+        )}
+      </div>
+    ) : (
+      <Typography>Loading data...</Typography>
+    )}
+  </CardContent>
+</Card>
+</Grid>
+
+
+
+
+        <Grid item xs={12} md={6}>
+      <Card>
+        <CardContent>
+          <Typography variant="h6">Product Distribution</Typography>
+          {/* Only render the Pie chart inside the Bar chart's axis */}
+          {barData && barData.labels && barData.datasets && barData.datasets[0].data && barData.labels.length > 0 ? (
+            <div style={{ position: 'relative', width: '100%', height: '300px' }}>
+              {/* This is the container for the Bar chart axes only */}
+              <div
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  border: '2px solid #3f51b5', // To display the axis' border
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                }}
+              >
+                {/* Pie Chart overlay inside Bar Chart container */}
+                {pieData && pieData.labels && pieData.datasets && pieData.datasets[0].data && pieData.labels.length > 0 && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      width: '80%',
+                      height: '80%',
+                      display: 'flex',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Pie data={pieData} options={{ responsive: true }} width={100} height={100} />
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <Typography>Loading data...</Typography>
+          )}
+        </CardContent>
+      </Card>
+    </Grid>
+
+
+    <Grid item xs={12} md={6}>
+<Card>
+  <CardContent>
+    <Typography variant="h6">Materials with Highest Tolerance %</Typography>
+    {barDataTolerance && <Bar data={barDataTolerance} />}
+  </CardContent>
+</Card>
+</Grid>
+
+
+
+
+<Grid item xs={12} md={6}>
+<Card>
+  <CardContent>
+    <Typography variant="h6">Tasks Started Per Weekday</Typography> {/* Updated title */}
+    <div style={{ width: "100%", maxWidth: "600px", height: "300px", margin: "0 auto" }}>
+      {barDataProduction ? (
+        <Bar 
+          data={barDataProduction} 
+          options={{ 
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                beginAtZero: true,
+                title: {
+                  display: true,
+                  text: "Number of Tasks", // Y-axis label for clarity
+                },
+              },
+              x: {
+                title: {
+                  display: true,
+                  text: "Weekdays", // X-axis label
+                },
+              },
+            },
+          }}
+        />
+      ) : (
+        <Typography>Loading...</Typography>
+      )}
+    </div>
+  </CardContent>
+</Card>
+</Grid>
+
+
+
+
+<Grid item xs={12} md={6}>
+  <Card>
+    <CardContent>
+      <Typography variant="h6">Lot Tracking Over Time</Typography>
+      {barDataLotTracking && <Bar data={barDataLotTracking} />}
+    </CardContent>
+  </Card>
+</Grid>
+
+
+        {/* Charts */}
+        <Grid item xs={12} md={6}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6">Product Distribution</Typography>
+              {pieData && <Pie data={pieData} />}
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid item xs={12} md={6}>
+          <Card>
+            <CardContent>
+              <Typography variant="h6">Batch Timeline</Typography>
+              {lineData && <Line data={lineData} />}
+            </CardContent>
+          </Card>
+        </Grid>
+      </Grid>
+
+      
+    </Box>)}
 
      
 
       {/* Main Dashboard Content */}
     
-      <Box component="main" sx={{ flexGrow: 1, p: 3 , display: "flex", justifyContent: "center" }}>
-     
-        <Toolbar /> {/* Space for top margin */}
-
-        <LocalizationProvider dateAdapter={AdapterDateFns}>
-  {/* Start Date Picker */}
-  <DatePicker
-    label="Select Start Date"
-    value={selectedStartDate}
-    onChange={handleStartDateChange}
-    renderInput={(params) => (
-      <TextField
-        {...params}
-        fullWidth
-        sx={{
-          position: "absolute",
-          marginTop: "20px",
-          right: "270px",
-          backgroundColor: "#f5f5f5",
-          borderRadius: "5px",
-          width: "200px",
-          zIndex: 10,
-        }}
-      />
-    )}
-    inputFormat="MM/dd/yyyy"
-  />
-
-  {/* End Date Picker */}
-  <DatePicker
-    label="Select End Date"
-    value={selectedEndDate}
-    onChange={handleEndDateChange}
-    renderInput={(params) => (
-      <TextField
-        {...params}
-        fullWidth
-        sx={{
-          position: "absolute",
-          marginTop: "20px",
-          right: "50px",
-          backgroundColor: "#f5f5f5",
-          borderRadius: "5px",
-          width: "200px",
-          zIndex: 10,
-        }}
-      />
-    )}
-    inputFormat="MM/dd/yyyy"
-  />
-</LocalizationProvider>;
-
-<label>Select Batch: </label>
-<select
-  style={{
-    width: "200px",
-    height: "100px",
-    padding: "8px",
-    fontSize: "16px",
-    border: "2px solid #007bff",
-    borderRadius: "5px",
-    backgroundColor: "#f8f9fa",
-    color: "#333",
-    cursor: "pointer",
-    outline: "none",
-  }}
-  value={selectedBatchName}  // Ensure state is tracked correctly
-  onChange={(e) => setSelectedBatchName(e.target.value)}
->
-  <option value="">All Batches</option>
-  {batchNames.map((batch) => (
-    <option key={batch} value={batch}>
-      {batch}
-    </option>
-  ))}
-</select>
-
-
-
-  
-        <Grid container spacing={2} padding={2}>
-
-          
-  {/* KPI Cards */}
-  {kpiData.map((item, index) => (
-    <Grid item xs={12} sm={6} md={3} key={index}>
-      <Card sx={{ backgroundColor: item.color, color: "white", textAlign: "center", height: "150px" }}>
-        <CardContent>
-          <Typography variant="h5">{item.value}</Typography>
-          <Typography variant="subtitle1">{item.title}</Typography>
-        </CardContent>
-      </Card>
-    </Grid>
-  ))}
-
-
-{/* Bar Chart - Products by Batch Name */}
-<Grid item xs={12} md={6}>
-  <Card>
-    <CardContent>
-      <Typography variant="h6">Product Distribution</Typography>
-      {/* Only render the Bar chart with axes and Pie chart inside */}
-      {barData && barData.labels && barData.datasets && barData.datasets[0].data && barData.labels.length > 0 ? (
-        <div style={{ position: 'relative', width: '100%', height: '500px' }}> {/* Increase height here */}
-          {/* Bar chart axes */}
-          <Bar
-            data={barData}
-            options={{
-              responsive: true,
-              plugins: {
-                tooltip: {
-                  enabled: false, // Hide default tooltips if needed
-                },
-              },
-              scales: {
-                x: {
-                  beginAtZero: true,
-                  ticks: {
-                    display: true, // Ensures that the x-axis labels are displayed
-                  },
-                  grid: {
-                    display: true, // Ensure x-axis grid is visible
-                    color: 'rgba(0, 0, 0, 0.1)', // Customize grid color
-                  },
-                },
-                y: {
-                  beginAtZero: true,
-                  ticks: {
-                    display: true, // Ensures that the y-axis labels are displayed
-                  },
-                  grid: {
-                    display: true, // Ensure y-axis grid is visible
-                    color: 'rgba(0, 0, 0, 0.1)', // Customize grid color
-                  },
-                },
-              },
-            }}
-            height={500} // Increase height here
-          />
-          {/* Pie Chart overlay inside Bar Chart container */}
-          {pieData && pieData.labels && pieData.datasets && pieData.datasets[0].data && pieData.labels.length > 0 && (
-            <div
-              style={{
-                position: 'absolute',
-                width: '70%',  // Adjust width to your needs
-                height: '70%', // Adjust height to your needs
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-              }}
-            >
-              <Pie data={pieData} options={{ responsive: true }} width={100} height={100} />
-            </div>
-          )}
-        </div>
-      ) : (
-        <Typography>Loading data...</Typography>
-      )}
-    </CardContent>
-  </Card>
-</Grid>
-
-
-  
-
-          <Grid item xs={12} md={6}>
-        <Card>
-          <CardContent>
-            <Typography variant="h6">Product Distribution</Typography>
-            {/* Only render the Pie chart inside the Bar chart's axis */}
-            {barData && barData.labels && barData.datasets && barData.datasets[0].data && barData.labels.length > 0 ? (
-              <div style={{ position: 'relative', width: '100%', height: '300px' }}>
-                {/* This is the container for the Bar chart axes only */}
-                <div
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    border: '2px solid #3f51b5', // To display the axis' border
-                    display: 'flex',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                  }}
-                >
-                  {/* Pie Chart overlay inside Bar Chart container */}
-                  {pieData && pieData.labels && pieData.datasets && pieData.datasets[0].data && pieData.labels.length > 0 && (
-                    <div
-                      style={{
-                        position: 'absolute',
-                        width: '80%',
-                        height: '80%',
-                        display: 'flex',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                      }}
-                    >
-                      <Pie data={pieData} options={{ responsive: true }} width={100} height={100} />
-                    </div>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <Typography>Loading data...</Typography>
-            )}
-          </CardContent>
-        </Card>
-      </Grid>
-  
-
-      <Grid item xs={12} md={6}>
-  <Card>
-    <CardContent>
-      <Typography variant="h6">Materials with Highest Tolerance %</Typography>
-      {barDataTolerance && <Bar data={barDataTolerance} />}
-    </CardContent>
-  </Card>
-</Grid>
-
-
-<Grid item xs={12} md={6}>
-  <Card>
-    <CardContent>
-      <Typography variant="h6">Tasks Started Per Weekday</Typography> {/* Updated title */}
-      <div style={{ width: "100%", maxWidth: "600px", height: "300px", margin: "0 auto" }}>
-        {barDataProduction ? (
-          <Bar 
-            data={barDataProduction} 
-            options={{ 
-              maintainAspectRatio: false,
-              scales: {
-                y: {
-                  beginAtZero: true,
-                  title: {
-                    display: true,
-                    text: "Number of Tasks", // Y-axis label for clarity
-                  },
-                },
-                x: {
-                  title: {
-                    display: true,
-                    text: "Weekdays", // X-axis label
-                  },
-                },
-              },
-            }}
-          />
-        ) : (
-          <Typography>Loading...</Typography>
-        )}
-      </div>
-    </CardContent>
-  </Card>
-</Grid>
-
-
-
-
-<Grid item xs={12} md={6}>
-    <Card>
-      <CardContent>
-        <Typography variant="h6">Lot Tracking Over Time</Typography>
-        {barDataLotTracking && <Bar data={barDataLotTracking} />}
-      </CardContent>
-    </Card>
-  </Grid>
-  
-
-          {/* Charts */}
-          <Grid item xs={12} md={6}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6">Product Distribution</Typography>
-                {pieData && <Pie data={pieData} />}
-              </CardContent>
-            </Card>
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6">Batch Timeline</Typography>
-                {lineData && <Line data={lineData} />}
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-
-        
-      </Box>
+      
     </Box>
   );
 };
