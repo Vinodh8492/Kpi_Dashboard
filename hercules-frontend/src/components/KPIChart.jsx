@@ -61,6 +61,9 @@ const Dashboard = () => {
   const [selectedProduct, setSelectedProduct] = useState("");  // New state
   const [productNames, setProductNames] = useState([]); // Add this line
 
+  const [selectedMaterial, setSelectedMaterial] = useState("");  // New State for Material
+const [materialNames, setMaterialNames] = useState([]);
+
 
 
   const handleStartDateChange = (newDate) => {
@@ -140,6 +143,10 @@ const Dashboard = () => {
             data = data.filter(item => item["Product Name"] === selectedProduct);
         }
 
+        if (selectedMaterial) {
+          data = data.filter(item => item["Material Name"] === selectedMaterial);
+      }
+
           console.log("✅ Final Filtered Data:", data);
 
           const formattedData = data.map(item => ({
@@ -147,6 +154,7 @@ const Dashboard = () => {
             batchStart: item["Batch Act Start"] || "N/A",
             batchEnd: item["Batch Act End"] || "N/A",
             productName: item["Product Name"] || "Unknown",
+            materialName: item["Material Name"] || "Unknown",
         }));
 
         setBatchData(formattedData);
@@ -213,6 +221,9 @@ const Dashboard = () => {
 
             const uniqueProductNames = Array.from(new Set(data.map(item => item["Product Name"]).filter(name => name)));
 setProductNames(uniqueProductNames); // Save it for dropdown
+
+const uniqueMaterialNames = Array.from(new Set(data.map(item => item["Material Name"]).filter(name => name)));
+setMaterialNames(uniqueMaterialNames);
 
 
             const uniqueProducts = uniqueProductsSet.size || 1;
@@ -398,7 +409,7 @@ console.log("✅ Bar Data for Lot Tracking Updated:", lotTrackingFormatted);
     
 
     fetchData();
-}, [selectedStartDate, selectedEndDate, selectedBatchName, selectedProduct]); 
+}, [selectedStartDate, selectedEndDate, selectedBatchName, selectedProduct, selectedMaterial]); 
 
   
 
@@ -429,30 +440,43 @@ if (pieData && pieData.labels && pieData.datasets && pieData.datasets[0].data) {
 
 const [showTable, setShowTable] = useState(false);
 
-console.log("selected product, ", selectedProduct)
-console.log("product name :", productNames)
+console.log("materials name :", selectedMaterial)
 
 
   return (
-    <Box sx={{ display: "flex", justifyContent:"center" }}>
+    <Box sx={{ display: "flex", justifyContent:"center", flexDirection:"column" }}>
 
-<Box sx={{ display: "flex", gap: 2, mb: 2 }}>
-        <Button 
-          variant={showTable ? "outlined" : "contained"} 
-          onClick={() => setShowTable(false)}
-          sx={{ height: '50px' }}
-        >
-          Show Graphs
-        </Button>
+<Box sx={{ 
+      display: "flex", 
+      gap: 2, 
+      mb: 2, 
+      ml : 10,
+      position: "sticky",  // Keeps it visible
+      top: 0,  // Sticks to the top
+      backgroundColor: "white",  // Prevent overlap
+      zIndex: 1000,  // Ensures it stays above other elements
+      padding: "10px 0",
+      width: "90%",
+      justifyContent: "center",
+      boxShadow: "0px 4px 6px rgba(0,0,0,0.1)" // Light shadow for visibility
+    }}>
+    <Button 
+      variant={showTable ? "outlined" : "contained"} 
+      onClick={() => setShowTable(false)}
+      sx={{ height: '50px' }}
+    >
+      Show Graphs
+    </Button>
 
-        <Button 
-          variant={showTable ? "contained" : "outlined"} 
-          onClick={() => setShowTable(true)}
-          sx={{ height: '50px' }}
-        >
-          Show Table
-        </Button>
-      </Box>
+    <Button 
+      variant={showTable ? "contained" : "outlined"} 
+      onClick={() => setShowTable(true)}
+      sx={{ height: '50px' }}
+    >
+      Show Table
+    </Button>
+  </Box>
+    
     
       {showTable ? (
        <TableContainer component={Paper} sx={{ maxWidth: "90%", margin: "auto", mt: 4 }}>
@@ -520,6 +544,23 @@ console.log("product name :", productNames)
   </Select>
 </FormControl>
 
+<FormControl sx={{ width: "200px" }}>
+  <InputLabel>Select Material</InputLabel>
+  <Select
+    value={selectedMaterial}
+    onChange={(e) => setSelectedMaterial(e.target.value)}
+    sx={{ backgroundColor: "#f8f9fa", borderRadius: "5px" }}
+  >
+    <MenuItem value="">All Materials</MenuItem>
+    {materialNames.map((material) => (
+      <MenuItem key={material} value={material}>
+        {material}
+      </MenuItem>
+    ))}
+  </Select>
+</FormControl>
+
+
 
        </Box>
 
@@ -532,6 +573,7 @@ console.log("product name :", productNames)
             <TableCell><b>Batch Start Date</b></TableCell>
             <TableCell><b>Batch End Date</b></TableCell>
             <TableCell><b>Product Name</b></TableCell>
+            <TableCell><b>Material Name</b></TableCell>
         </TableRow>
     </TableHead>
     <TableBody>
@@ -542,13 +584,14 @@ console.log("product name :", productNames)
                 <TableCell>{item.batchStart}</TableCell>
                 <TableCell>{item.batchEnd}</TableCell>
                 <TableCell>{item.productName}</TableCell>
+                <TableCell>{item.materialName}</TableCell>
             </TableRow>
         ))}
     </TableBody>
 </Table>
 
    </TableContainer>
-      ) : ( <Box component="main" sx={{ flexGrow: 1, p: 3 , display: "flex", justifyContent: "center" }}>
+      ) : ( <Box component="main" sx={{ maxWidth: "90%", margin: "auto", mt: "-20px" }}>
      
       <Toolbar /> {/* Space for top margin */}
 
@@ -604,7 +647,7 @@ console.log("product name :", productNames)
 <select
 style={{
   width: "200px",
-  height: "100px",
+  height: "50px",
   padding: "8px",
   fontSize: "16px",
   border: "2px solid #007bff",
@@ -629,7 +672,7 @@ onChange={(e) => setSelectedBatchName(e.target.value)}
 <select
   style={{
     width: "200px",
-    height: "100px",
+    height: "50px",
     padding: "8px",
     fontSize: "16px",
     border: "2px solid #007bff",
@@ -651,6 +694,31 @@ onChange={(e) => setSelectedBatchName(e.target.value)}
 </select>
 
 
+<label>Select Material: </label>
+    <select
+      style={{
+        width: "200px",
+        height: "50px",
+        padding: "8px",
+        fontSize: "16px",
+        border: "2px solid #28a745",
+        borderRadius: "5px",
+        backgroundColor: "#f8f9fa",
+        color: "#333",
+        cursor: "pointer",
+        outline: "none",
+        marginLeft: "10px"
+      }}
+      value={selectedMaterial}  
+      onChange={(e) => setSelectedMaterial(e.target.value)}
+    >
+      <option value="">All Materials</option>
+      {materialNames.map((material) => (
+        <option key={material} value={material}>
+          {material}
+        </option>
+      ))}
+    </select>
 
 
 
