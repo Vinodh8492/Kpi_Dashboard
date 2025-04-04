@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Grid, FormControl,InputLabel, MenuItem,Select, Card, CardContent, Typography, Box, Toolbar, Drawer, List, ListItemButton, ListItemIcon, ListItemText, Button } from "@mui/material";
+import { Grid, FormControl,InputLabel, MenuItem,Select, Card, CardContent, Typography, Box, Toolbar, Drawer, List, ListItemButton, ListItemIcon, ListItemText, Button, Checkbox } from "@mui/material";
 import { Pie, Line, Bar } from "react-chartjs-2";
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -8,6 +8,7 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
+import { format } from "date-fns";
 
 
 import axios from "axios";
@@ -56,13 +57,19 @@ const Dashboard = () => {
 
   const [batchNames, setBatchNames] = useState([]);
   const [selectedBatch, setSelectedBatch] = useState("");
-  const [selectedBatchName, setSelectedBatchName] = useState(""); // Initialize it properly
+  const [selectedBatchName, setSelectedBatchName] = useState([]); // Initialize it properly
 
-  const [selectedProduct, setSelectedProduct] = useState("");  // New state
+  const [selectedProduct, setSelectedProduct] = useState([]);  // New state
   const [productNames, setProductNames] = useState([]); // Add this line
 
   const [selectedMaterial, setSelectedMaterial] = useState("");  // New State for Material
 const [materialNames, setMaterialNames] = useState([]);
+
+const [batchCounts, setBatchCounts] = useState({});
+const [sumSP, setSumSP] = useState({});
+const [sumAct, setSumAct] = useState({});
+const [errKg, setErrKg] = useState({});
+const [errPercentage, setErrPercentage] = useState({});
 
 
 
@@ -135,13 +142,8 @@ const [materialNames, setMaterialNames] = useState([]);
                 });
             }
 
-            if (selectedBatchName) {
-              data = data.filter(item => item["Batch Name"] === selectedBatchName);
-          }
-
-          if (selectedProduct) {
-            data = data.filter(item => item["Product Name"] === selectedProduct);
-        }
+          
+            
 
         if (selectedMaterial) {
           data = data.filter(item => item["Material Name"] === selectedMaterial);
@@ -149,15 +151,100 @@ const [materialNames, setMaterialNames] = useState([]);
 
           console.log("✅ Final Filtered Data:", data);
 
-          const formattedData = data.map(item => ({
-            batchName: item["Batch Name"] || "Unknown",
-            batchStart: item["Batch Act Start"] || "N/A",
-            batchEnd: item["Batch Act End"] || "N/A",
-            productName: item["Product Name"] || "Unknown",
-            materialName: item["Material Name"] || "Unknown",
-        }));
+         // Step 1: Compute Aggregated Values
+const batchCounts = data.reduce((acc, item) => {
+  const productName = item["Product Name"] || "Unknown";
+  acc[productName] = (acc[productName] || 0) + 1;
+  return acc;
+}, {});
 
-        setBatchData(formattedData);
+setBatchCounts(batchCounts);
+
+const sumSP = data.reduce((acc, item) => {
+  const productName = item["Product Name"] || "Unknown";
+  const setPointFloat = parseFloat(item["SetPoint Float"]) || 0;
+  
+  acc[productName] = (acc[productName] || 0) + setPointFloat;
+  return acc;
+}, {});
+setSumSP(sumSP);
+
+const sumAct = data.reduce((acc, item) => {
+  const productName = item["Product Name"] || "Unknown";
+  const actualValueFloat = parseFloat(item["Actual Value Float"]) || 0;
+  
+  acc[productName] = (acc[productName] || 0) + actualValueFloat;
+  return acc;
+}, {});
+setSumAct(sumAct);
+
+const errKg = Object.keys(sumSP).reduce((acc, productName) => {
+  acc[productName] = (sumAct[productName] || 0) - (sumSP[productName] || 0);
+  return acc;
+}, {});
+setErrKg(errKg);
+
+const errPercentage = Object.keys(sumSP).reduce((acc, productName) => {
+  const sumSPValue = sumSP[productName] || 0;
+  const sumActValue = sumAct[productName] || 0;
+
+  const errKgValue = sumActValue - sumSPValue;
+  const errPercent = sumSPValue !== 0 ? ((errKgValue / sumSPValue) * 100).toFixed(2) : "0.00";
+
+  acc[productName] = `${errPercent} %`;
+  return acc;
+}, {});
+setErrPercentage(errPercentage);
+
+// Step 2: Merge Computed Data into formattedData
+// Step 1: Format the data first
+const formattedData = data.map(item => {
+  const productName = item["Product Name"] || "Unknown";
+
+  return {
+    batchName: item["Batch Name"] || "Unknown",
+    batchStart: item["Batch Act Start"] || "N/A",
+    batchEnd: item["Batch Act End"] || "N/A",
+    productName,
+    materialName: item["Material Name"] || "Unknown",
+    quantity: item["Quantity"] || 0,
+    setPointFloat: item["SetPoint Float"] || 0,
+    actualValueFloat: item["Actual Value Float"] || 0,
+    
+    // Include calculated values
+    batchCount: batchCounts[productName] || 0,
+    totalSetPoint: (sumSP[productName] || 0).toFixed(2),
+    totalActual: (sumAct[productName] || 0).toFixed(2),
+    errKg: (errKg[productName] || 0).toFixed(2),
+    errPercentage: errPercentage[productName] || "0.00 %"
+  };
+});
+
+// Step 2: Apply filters AFTER formatting the data
+let filteredData = formattedData;
+
+if (Array.isArray(selectedBatchName) && selectedBatchName.length > 0) {
+  filteredData = filteredData.filter(item => selectedBatchName.includes(item.batchName));
+}
+
+if (Array.isArray(selectedProduct) && selectedProduct.length > 0) {
+  filteredData = filteredData.filter(item => selectedProduct.includes(item.productName));
+}
+
+// Step 3: Remove duplicates based on product name
+const uniqueBatchData = Object.values(
+  filteredData.reduce((acc, item) => {
+    if (!acc[item.productName]) {
+      acc[item.productName] = item; // Store only the first occurrence
+    }
+    return acc;
+  }, {})
+);
+
+// Step 4: Set the unique batch data
+setBatchData(uniqueBatchData);
+
+
 
             const totalBatches = data.length;
             const uniqueProductsSet = new Set();
@@ -224,6 +311,10 @@ setProductNames(uniqueProductNames); // Save it for dropdown
 
 const uniqueMaterialNames = Array.from(new Set(data.map(item => item["Material Name"]).filter(name => name)));
 setMaterialNames(uniqueMaterialNames);
+
+
+
+
 
 
             const uniqueProducts = uniqueProductsSet.size || 1;
@@ -440,8 +531,8 @@ if (pieData && pieData.labels && pieData.datasets && pieData.datasets[0].data) {
 
 const [showTable, setShowTable] = useState(false);
 
-console.log("materials name :", selectedMaterial)
-
+console.log("batch Data :", batchData)
+console.log("selected batch name :", selectedBatchName)
 
   return (
     <Box sx={{ display: "flex", justifyContent:"center", flexDirection:"column" }}>
@@ -511,38 +602,53 @@ console.log("materials name :", selectedMaterial)
          </LocalizationProvider>
 
          {/* Batch Dropdown */}
-         <FormControl sx={{ width: "200px" }}>
-           <InputLabel>Select Batch</InputLabel>
-           <Select
-             value={selectedBatchName}
-             onChange={(e) => setSelectedBatchName(e.target.value)}
-             sx={{ backgroundColor: "#f8f9fa", borderRadius: "5px" }}
-           >
-             <MenuItem value="">All Batches</MenuItem>
-             {batchNames.map((batch) => (
-               <MenuItem key={batch} value={batch}>
-                 {batch}
-               </MenuItem>
-             ))}
-           </Select>
-         </FormControl>
-
-         {/* Product Name Dropdown */}
 <FormControl sx={{ width: "200px" }}>
-  <InputLabel>Select Product</InputLabel>
+  <InputLabel>Select Batch</InputLabel>
   <Select
-    value={selectedProduct}
-    onChange={(e) => setSelectedProduct(e.target.value)}
+    multiple
+    value={selectedBatchName}
+    onChange={(e) => {
+      const value = e.target.value;
+      setSelectedBatchName(
+        value.includes("") ? [] : value // Reset when "All Batches" is selected
+      );
+    }}
     sx={{ backgroundColor: "#f8f9fa", borderRadius: "5px" }}
+    renderValue={(selected) => selected.join(", ")} // Show selected items
   >
-    <MenuItem value="">All Products</MenuItem>
-    {productNames.map((product) => (
-      <MenuItem key={product} value={product}>
-        {product}
+    <MenuItem value="">All Batches</MenuItem>
+    {batchNames.map((batch) => (
+      <MenuItem key={batch} value={batch}>
+        {selectedBatchName.includes(batch) ? "✔ " : ""} {batch}
       </MenuItem>
     ))}
   </Select>
 </FormControl>
+
+{/* Product Name Dropdown */}
+<FormControl sx={{ width: "200px" }}>
+  <InputLabel>Select Product</InputLabel>
+  <Select
+    multiple
+    value={selectedProduct}
+    onChange={(e) => {
+      const value = e.target.value;
+      setSelectedProduct(
+        value.includes("") ? [] : value // Reset when "All Products" is selected
+      );
+    }}
+    sx={{ backgroundColor: "#f8f9fa", borderRadius: "5px" }}
+    renderValue={(selected) => selected.join(", ")} // Show selected items
+  >
+    <MenuItem value="">All Products</MenuItem>
+    {productNames.map((product) => (
+      <MenuItem key={product} value={product}>
+        {selectedProduct.includes(product) ? "✔ " : ""} {product}
+      </MenuItem>
+    ))}
+  </Select>
+</FormControl>
+
 
 <FormControl sx={{ width: "200px" }}>
   <InputLabel>Select Material</InputLabel>
@@ -564,27 +670,47 @@ console.log("materials name :", selectedMaterial)
 
        </Box>
 
+{/* Display Selected Date Range */}
+<Box sx={{ width: "100%", mt: 2 }}>
+  <Typography variant="h6" sx={{color: "#333" }}>
+  <span style={{ fontWeight: "bold" }}>Date Range:</span>  {selectedStartDate ? format(new Date(selectedStartDate), "MM/dd/yyyy") : "Start Date"} 7:00 to <span></span> 
+                {selectedEndDate ? format(new Date(selectedEndDate), "MM/dd/yyyy") : "End Date"}  7:00
+  </Typography>
+
+  {/* Selected Products */}
+  <Typography variant="h6" sx={{ color: "#333", mt: 1 }}>
+  <span style={{ fontWeight: "bold" }}>Selected Products:</span> {selectedProduct && selectedProduct.length > 0 ? selectedProduct.join(", ") : "All Products"}
+</Typography>
+
+{/* Selected Batches */}
+<Typography variant="h6" sx={{ color: "#333", mt: 1 }}>
+  <span style={{ fontWeight: "bold" }}>Selected Batches:</span> {selectedBatchName && selectedBatchName.length > 0 ? selectedBatchName.join(", ") : "All Batches"}
+</Typography>
+
+</Box>
+
+
        {/* Table Data */}
        <Table>
     <TableHead>
         <TableRow>
-            <TableCell><b>ID</b></TableCell> {/* New Serial Number Column */}
-            <TableCell><b>Batch Name</b></TableCell>
-            <TableCell><b>Batch Start Date</b></TableCell>
-            <TableCell><b>Batch End Date</b></TableCell>
-            <TableCell><b>Product Name</b></TableCell>
-            <TableCell><b>Material Name</b></TableCell>
+            <TableCell><b>Product Name</b></TableCell> {/* New Serial Number Column */}
+            <TableCell><b>No.of Batches</b></TableCell>
+            <TableCell><b>Sum SP</b></TableCell>
+            <TableCell><b>Sum Act</b></TableCell>
+            <TableCell><b>Err Kg</b></TableCell>
+            <TableCell><b>Err %</b></TableCell>
         </TableRow>
     </TableHead>
     <TableBody>
         {batchData.map((item, index) => (
             <TableRow key={index}>
-                <TableCell>{index + 1}</TableCell> {/* Serial Number */}
-                <TableCell>{item.batchName}</TableCell>
-                <TableCell>{item.batchStart}</TableCell>
-                <TableCell>{item.batchEnd}</TableCell>
-                <TableCell>{item.productName}</TableCell>
-                <TableCell>{item.materialName}</TableCell>
+                <TableCell>{item.productName}</TableCell> {/* Serial Number */}
+                <TableCell>{item.batchCount}</TableCell>
+                <TableCell>{item.totalSetPoint}</TableCell>
+                <TableCell>{item.totalActual}</TableCell>
+                <TableCell>{item.errKg}</TableCell>
+                <TableCell>{item.errPercentage}</TableCell>
             </TableRow>
         ))}
     </TableBody>
