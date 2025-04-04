@@ -202,14 +202,20 @@ const formattedData = data.map(item => {
   const productName = item["Product Name"] || "Unknown";
 
   return {
+    batchGuid: item["Batch GUID"] || "Unknown",
     batchName: item["Batch Name"] || "Unknown",
     batchStart: item["Batch Act Start"] || "N/A",
     batchEnd: item["Batch Act End"] || "N/A",
     productName,
     materialName: item["Material Name"] || "Unknown",
+    materialCode: item["Material Code"] || "Unknown",
     quantity: item["Quantity"] || 0,
     setPointFloat: item["SetPoint Float"] || 0,
     actualValueFloat: item["Actual Value Float"] || 0,
+    sourceServer: item["Source Server"] || "Unknown",
+    rootGuid: item["ROOTGUID"] || "Unknown",
+    orderId: item["OrderId"] || "Unknown", 
+
     
     // Include calculated values
     batchCount: batchCounts[productName] || 0,
@@ -221,15 +227,24 @@ const formattedData = data.map(item => {
 });
 
 // Step 2: Apply filters AFTER formatting the data
-let filteredData = formattedData;
+// Apply filters independently
+let filteredData = formattedData.filter(item => {
+  const matchesBatch = selectedBatchName.length === 0 || selectedBatchName.includes(item.batchName);
+  const matchesProduct = selectedProduct.length === 0 || selectedProduct.includes(item.productName);
 
-if (Array.isArray(selectedBatchName) && selectedBatchName.length > 0) {
-  filteredData = filteredData.filter(item => selectedBatchName.includes(item.batchName));
+  return matchesBatch || matchesProduct;  // Instead of AND, we use OR
+});
+
+
+if ((Array.isArray(selectedBatchName) && selectedBatchName.length > 0) || 
+    (Array.isArray(selectedProduct) && selectedProduct.length > 0)) {
+  
+  filteredData = filteredData.filter(item => 
+    (selectedBatchName.length === 0 || selectedBatchName.includes(item.batchName)) ||
+    (selectedProduct.length === 0 || selectedProduct.includes(item.productName))
+  );
 }
 
-if (Array.isArray(selectedProduct) && selectedProduct.length > 0) {
-  filteredData = filteredData.filter(item => selectedProduct.includes(item.productName));
-}
 
 // Step 3: Remove duplicates based on product name
 const uniqueBatchData = Object.values(
@@ -686,12 +701,15 @@ console.log("selected batch name :", selectedBatchName)
 <Typography variant="h6" sx={{ color: "#333", mt: 1 }}>
   <span style={{ fontWeight: "bold" }}>Selected Batches:</span> {selectedBatchName && selectedBatchName.length > 0 ? selectedBatchName.join(", ") : "All Batches"}
 </Typography>
+<br />
 
 </Box>
 
-
+<Typography variant="h6"  style={{ fontWeight: 'bold' }}>
+   Product Batch Summary
+  </Typography>
        {/* Table Data */}
-       <Table>
+       <Table  sx={{ border: '1px solid black', borderCollapse: 'collapse' }}>
     <TableHead>
         <TableRow>
             <TableCell><b>Product Name</b></TableCell> {/* New Serial Number Column */}
@@ -715,6 +733,110 @@ console.log("selected batch name :", selectedBatchName)
         ))}
     </TableBody>
 </Table>
+
+<br />
+
+<Typography variant="h6"  style={{ fontWeight: 'bold' }}>
+    Batch Details Overview
+  </Typography>
+
+<Table sx={{ border: '1px solid black', borderCollapse: 'collapse' }}>
+  <TableHead >
+    <TableRow >
+      <TableCell><b>Batch GUID</b></TableCell>
+      <TableCell><b>Batch Name</b></TableCell>
+      <TableCell><b>Product Name</b></TableCell>
+      <TableCell><b>Batch Start</b></TableCell>
+      <TableCell><b>Batch End</b></TableCell>
+      <TableCell><b>Batch Quantity</b></TableCell>
+      <TableCell><b>Material Name</b></TableCell>
+      <TableCell><b>Material Code</b></TableCell>
+      <TableCell><b>SetPoint Float</b></TableCell>
+      <TableCell><b>Actual Value Float</b></TableCell>
+      <TableCell><b>Source Server</b></TableCell>
+      <TableCell><b>Root GUID</b></TableCell>
+      <TableCell><b>Order ID</b></TableCell>
+    </TableRow>
+  </TableHead>
+  <TableBody>
+    {batchData.map((item, index) => (
+      <TableRow key={index}>
+        <TableCell>{item.batchGuid}</TableCell>
+        <TableCell>{item.batchName}</TableCell>
+        <TableCell>{item.productName}</TableCell>
+        <TableCell>{item.batchStart}</TableCell>
+        <TableCell>{item.batchEnd}</TableCell>
+        <TableCell>{item.quantity}</TableCell>
+        <TableCell>{item.materialName}</TableCell>
+        <TableCell>{item.materialCode}</TableCell>
+        <TableCell>{item.setPointFloat.toFixed(2)}</TableCell>
+        <TableCell>{item.actualValueFloat.toFixed(2)}</TableCell>
+        <TableCell>{item.sourceServer}</TableCell>
+        <TableCell>{item.rootGuid}</TableCell>
+        <TableCell>{item.orderId}</TableCell>
+      </TableRow>
+    ))}
+  </TableBody>
+</Table>
+
+<br />
+
+<Typography variant="h6"style={{ fontWeight: 'bold' }}>
+  Unique Product Names
+</Typography>
+
+
+<Table sx={{ border: '1px solid black' }}>
+    <TableHead>
+        <TableRow>
+            <TableCell sx={{ border: '1px solid black' }}><b>Product Name</b></TableCell> {/* Updated Column */}
+        </TableRow>
+    </TableHead>
+    <TableBody>
+        {batchData
+            .filter((value, index, self) => 
+                index === self.findIndex((t) => (
+                    t.productName === value.productName
+                ))
+            )  // Filters out duplicate product names
+            .map((item, index) => (
+                <TableRow key={index}>
+                    <TableCell>{item.productName}</TableCell> {/* Display Product Name */}
+                </TableRow>
+            ))}
+    </TableBody>
+</Table>
+
+
+<br />
+
+<Typography variant="h6"style={{ fontWeight: 'bold' }}>
+  Unique Batch Names
+</Typography>
+
+<Table sx={{ border: '1px solid black' }}>
+    <TableHead>
+        <TableRow>
+            <TableCell sx={{ border: '1px solid black' }}><b>Batch Name</b></TableCell> {/* Updated Column for Batch Name */}
+        </TableRow>
+    </TableHead>
+    <TableBody>
+        {batchData
+            .filter((value, index, self) => 
+                index === self.findIndex((t) => (
+                    t.batchName === value.batchName // Filters out duplicate batch names
+                ))
+            )
+            .map((item, index) => (
+                <TableRow key={index}>
+                    <TableCell>{item.batchName}</TableCell> {/* Display Batch Name */}
+                </TableRow>
+            ))}
+    </TableBody>
+</Table>
+
+
+
 
    </TableContainer>
       ) : ( <Box component="main" sx={{ maxWidth: "90%", margin: "auto", mt: "-20px" }}>
