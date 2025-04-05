@@ -71,6 +71,7 @@ const [sumAct, setSumAct] = useState({});
 const [errKg, setErrKg] = useState({});
 const [errPercentage, setErrPercentage] = useState({});
 
+const [sumSetPointPerBatch, setSumSetPointPerBatch] = useState({})
 
 
   const handleStartDateChange = (newDate) => {
@@ -196,11 +197,23 @@ const errPercentage = Object.keys(sumSP).reduce((acc, productName) => {
 }, {});
 setErrPercentage(errPercentage);
 
+const sumSetPointPerBatch = data.reduce((acc, item) => {
+  const productName = item["Product Name"] || "Unknown";
+  const batchName = item["Batch Name"] || "Unknown";
+  const setPointFloat = parseFloat(item["SetPoint Float"]) || 0;
+
+  if (!acc[productName]) acc[productName] = {};
+  acc[productName][batchName] = (acc[productName][batchName] || 0) + setPointFloat;
+
+  return acc;
+}, {});
+setSumSetPointPerBatch(sumSetPointPerBatch);
+
 // Step 2: Merge Computed Data into formattedData
 // Step 1: Format the data first
 const formattedData = data.map(item => {
   const productName = item["Product Name"] || "Unknown";
-
+  const batchName = item["Batch Name"] || "Unknown";
   return {
     batchGuid: item["Batch GUID"] || "Unknown",
     batchName: item["Batch Name"] || "Unknown",
@@ -222,9 +235,12 @@ const formattedData = data.map(item => {
     totalSetPoint: (sumSP[productName] || 0).toFixed(2),
     totalActual: (sumAct[productName] || 0).toFixed(2),
     errKg: (errKg[productName] || 0).toFixed(2),
-    errPercentage: errPercentage[productName] || "0.00 %"
+    errPercentage: errPercentage[productName] || "0.00 %",
+
+    final_sp : (sumSetPointPerBatch[productName]?.[batchName] || 0).toFixed(2),
   };
 });
+
 
 // Step 2: Apply filters AFTER formatting the data
 // Apply filters independently
@@ -234,6 +250,8 @@ let filteredData = formattedData.filter(item => {
 
   return matchesBatch || matchesProduct;  // Instead of AND, we use OR
 });
+
+
 
 
 if ((Array.isArray(selectedBatchName) && selectedBatchName.length > 0) || 
@@ -246,15 +264,32 @@ if ((Array.isArray(selectedBatchName) && selectedBatchName.length > 0) ||
 }
 
 
+
 // Step 3: Remove duplicates based on product name
 const uniqueBatchData = Object.values(
   filteredData.reduce((acc, item) => {
     if (!acc[item.productName]) {
-      acc[item.productName] = item; // Store only the first occurrence
+      acc[item.productName] = {
+        ...item,
+        materials: [],
+      };
     }
+
+    // Always push materials for every item related to the same product
+    acc[item.productName].materials.push({
+      materialName: item.materialName,
+      materialCode: item.materialCode,
+      quantity: item.quantity,
+      setPointFloat: item.setPointFloat,
+      actualValueFloat: item.actualValueFloat,
+    });
+
     return acc;
   }, {})
 );
+
+console.log("unique data", uniqueBatchData);
+
 
 // Step 4: Set the unique batch data
 setBatchData(uniqueBatchData);
@@ -361,6 +396,8 @@ setMaterialNames(uniqueMaterialNames);
 
             console.log("✅ Processed Metrics:", { totalBatches, uniqueProducts, batchesPerProduct, latestBatchDate });
 
+            
+
             setPieData({
                 labels: Object.keys(productCounts),
                 datasets: [
@@ -394,6 +431,8 @@ setMaterialNames(uniqueMaterialNames);
                     }
                 ]
             });
+
+            
 
             setKpiData([
                 { title: "Total Batches", value: totalBatches, color: "#3f51b5" },
@@ -507,6 +546,8 @@ setBarDataLotTracking({
 console.log("✅ Bar Data for Lot Tracking Updated:", lotTrackingFormatted);
 
 
+
+
         } catch (error) {
             console.error("❌ Error fetching dashboard data:", error);
         }
@@ -518,6 +559,7 @@ console.log("✅ Bar Data for Lot Tracking Updated:", lotTrackingFormatted);
 }, [selectedStartDate, selectedEndDate, selectedBatchName, selectedProduct, selectedMaterial]); 
 
   
+
 
 const getRandomColors = (numColors) => {
   return Array.from({ length: numColors }, () => `#${Math.floor(Math.random() * 16777215).toString(16)}`);
@@ -545,9 +587,9 @@ if (pieData && pieData.labels && pieData.datasets && pieData.datasets[0].data) {
 }
 
 const [showTable, setShowTable] = useState(false);
+const groupedBatches = [];
 
-console.log("batch Data :", batchData)
-console.log("selected batch name :", selectedBatchName)
+console.log("batch dATA is :", batchData)
 
   return (
     <Box sx={{ display: "flex", justifyContent:"center", flexDirection:"column" }}>
@@ -705,6 +747,8 @@ console.log("selected batch name :", selectedBatchName)
 
 </Box>
 
+
+
 <Typography variant="h6"  style={{ fontWeight: 'bold' }}>
    Product Batch Summary
   </Typography>
@@ -834,6 +878,93 @@ console.log("selected batch name :", selectedBatchName)
             ))}
     </TableBody>
 </Table>
+
+<br />
+
+{batchData.map((batch, idx) => {
+  // ✅ Calculate total error percentage from all materials in the current batch
+  const totalErrPercentage = batch.materials?.reduce(
+    (sum, mat) => sum + Number(mat.errPercentage || 0),
+    0
+  ).toFixed(2)
+  
+  
+
+  return (
+    <Box key={batch.batchGuid} mb={4} p={2} border="1px solid #ccc" borderRadius="8px">
+      {/* ✅ Batch Info */}
+
+      {/* ✅ Materials Table */}
+      <Table size="small" sx={{ mt: 2, border: '1px solid black', borderCollapse: 'collapse' }}>
+        <TableHead>
+          <TableRow>
+          <TableCell><b>Details</b></TableCell>
+            <TableCell><b>Material</b></TableCell>
+            <TableCell><b>Code</b></TableCell>
+            <TableCell><b>SP</b></TableCell>
+            <TableCell><b>Act</b></TableCell>
+            <TableCell><b>Err Kg</b></TableCell>
+            <TableCell><b>Err %</b></TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+        {batchData?.map((mat, i) => (
+  mat.materials?.map((material, idx) => (
+    <TableRow key={`${i}-${idx}`}>
+      <TableCell>
+        {i === 0 && idx === 0 && (
+          <>
+            <Typography variant="body2"><b>Batch:</b> {mat.batchName}</Typography>
+            <Typography variant="body2"><b>Product:</b> {mat.productName}</Typography>
+            <Typography variant="body2"><b>Start:</b> {mat.batchStart}</Typography>
+            <Typography variant="body2"><b>End:</b> {mat.batchEnd}</Typography>
+            <Typography variant="body2"><b>Quantity:</b> {mat.quantity}</Typography>
+          </>
+        )}
+      </TableCell>
+
+      <TableCell>{material.materialName}</TableCell>
+      <TableCell>{material.materialCode}</TableCell>
+      <TableCell>{Number(material.setPointFloat).toFixed(2)}</TableCell>
+      <TableCell>{Number(material.actualValueFloat).toFixed(2)}</TableCell>
+      <TableCell>
+        {(Number(material.actualValueFloat) - Number(material.setPointFloat)).toFixed(2)}
+      </TableCell>
+      <TableCell
+        sx={{
+          color:
+            Math.abs(
+              ((material.actualValueFloat - material.setPointFloat) / material.setPointFloat) * 100
+            ) > 5
+              ? 'red'
+              : 'green',
+        }}
+      >
+        {((material.actualValueFloat - material.setPointFloat) / material.setPointFloat * 100).toFixed(2)}%
+      </TableCell>
+    </TableRow>
+  ))
+))}
+
+
+          {/* ✅ Total Row with Corrected errPercentage */}
+          <TableRow>
+          <TableCell />
+            <TableCell colSpan={2}><b>Total</b></TableCell>
+            <TableCell><b>{batch.final_sp}</b></TableCell>
+            <TableCell><b>{batch.totalActual}</b></TableCell>
+            <TableCell><b>{batch.errKg}</b></TableCell>
+            <TableCell sx={{ color: Math.abs(totalErrPercentage) > 5 ? 'red' : 'green' }}>
+              <b>{totalErrPercentage}%</b>
+            </TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
+    </Box>
+  );
+})}
+
+
 
 
 
