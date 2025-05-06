@@ -1,0 +1,11 @@
+{
+  "enabled": true,
+  "sender": "syed.rawoof.hercules@gmail.com",
+  "recipient": "syedrawoof115@gmail.com",
+  "time": "10:19",
+  "include": {
+    "charts": true,
+    "kpis": true,
+    "table": true
+  }
+}
